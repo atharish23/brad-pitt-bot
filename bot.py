@@ -1,6 +1,7 @@
 import os
 import time
 import asyncio
+from aiohttp import web
 from pyrogram import Client, filters, idle
 
 # Credentials
@@ -18,6 +19,18 @@ app = Client(
 )
 
 user_thumbs = {}
+
+# Aiohttp Web Server Routes (Required for Render Health Check)
+routes = web.RouteTableDef()
+
+@routes.get("/", allow_head=True)
+async def root_route_handler(request):
+    return web.json_response({"status": "running", "bot": "BradPittBot"})
+
+async def web_server():
+    web_app = web.Application()
+    web_app.add_routes(routes)
+    return web_app
 
 async def progress_bar(current, total, status_msg, start_time, action_type):
     now = time.time()
@@ -127,6 +140,22 @@ async def rename_handler(client, message):
         if file_path and os.path.exists(file_path):
             os.remove(file_path)
 
+async def main():
+    # Bind port for Render Web Service
+    PORT = int(os.environ.get("PORT", 8080))
+    app_runner = web.AppRunner(await web_server())
+    await app_runner.setup()
+    site = web.TCPSite(app_runner, "0.0.0.0", PORT)
+    await site.start()
+    print(f"Web server started on port {PORT}")
+
+    # Start Pyrogram Bot
+    await app.start()
+    print("Bot is Live and Online!")
+    
+    await idle()
+    await app.stop()
+
 if __name__ == "__main__":
-    app.run()
+    asyncio.run(main())
     
