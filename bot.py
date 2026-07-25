@@ -24,9 +24,6 @@ def run_flask():
     port = int(os.environ.get("PORT", 8080))
     web_app.run(host="0.0.0.0", port=port)
 
-# Pyrogram Client Setup (Initialized inside main to prevent loop errors)
-app = None
-
 async def progress_bar(current, total, status_msg, start_time, action_type):
     now = time.time()
     diff = now - start_time
@@ -52,9 +49,7 @@ async def progress_bar(current, total, status_msg, start_time, action_type):
         except Exception:
             pass
 
-# Handlers will be registered dynamically or we use a wrapper, 
-# but let's define client handlers using a global app instance declared inside main:
-# To make decorators work cleanly, we instantiate Client globally without starting it:
+# Initialize Pyrogram Client (without starting globally)
 app = Client(
     "BradPittBot",
     api_id=API_ID,
@@ -155,6 +150,6 @@ if __name__ == "__main__":
     # Start Flask Web Server in Background thread for Render
     Thread(target=run_flask, daemon=True).start()
     
-    # Start Pyrogram Bot inside proper event loop
+    # Run asyncio event loop safely
     asyncio.run(main())
     
