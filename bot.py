@@ -140,7 +140,13 @@ async def rename_handler(client, message):
             os.remove(file_path)
 
 if __name__ == "__main__":
-    Thread(target=run_web).start()
+    # Fix Python 3.10+ event loop crash
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    # Flask for Render Port Bind
+    Thread(target=run_web, daemon=True).start()
+    
     print("Bot Started Live on Cloud!")
     app.run()
     
