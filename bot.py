@@ -1,20 +1,8 @@
 import os
 import time
 import asyncio
-from threading import Thread
-from flask import Flask
-from pyrogram import Client, filters
-
-# Render Health Check Fix
-web_app = Flask(__name__)
-
-@web_app.route('/')
-def home():
-    return "Bot is Live and Running!"
-
-def run_web():
-    port = int(os.environ.get("PORT", 8080))
-    web_app.run(host="0.0.0.0", port=port)
+from aiohttp import web
+from pyrogram import Client, filters, idle
 
 # Credentials
 API_ID = 29884680
@@ -22,6 +10,7 @@ API_HASH = "ff4b89a18ed81b27f406d719c580689f"
 BOT_TOKEN = "8971531788:AAHV2d8P23EhY0uoRI4xtkNI82pSPHMVxKM"
 CHANNEL_TAG = "@Brad_Pitt_Movies"
 
+# Pyrogram Client
 app = Client(
     "BradPittBot",
     api_id=API_ID,
@@ -30,6 +19,18 @@ app = Client(
 )
 
 user_thumbs = {}
+
+# Web routes for Render Port Binding
+routes = web.RouteTableDef()
+
+@routes.get("/", allow_head=True)
+async def root_route_handler(request):
+    return web.json_response({"status": "running", "bot": "BradPittBot"})
+
+async def web_server():
+    web_app = web.Application()
+    web_app.add_routes(routes)
+    return web_app
 
 async def progress_bar(current, total, status_msg, start_time, action_type):
     now = time.time()
@@ -139,14 +140,23 @@ async def rename_handler(client, message):
         if file_path and os.path.exists(file_path):
             os.remove(file_path)
 
+async def main():
+    # Start Web Server on Render assigned Port
+    PORT = int(os.environ.get("PORT", 8080))
+    app_runner = web.AppRunner(await web_server())
+    await app_runner.setup()
+    site = web.TCPSite(app_runner, "0.0.0.0", PORT)
+    await site.start()
+    print(f"Web Server running on port {PORT}")
+
+    # Start Pyrogram Bot
+    await app.start()
+    print("Bot is Live and Online!")
+    
+    await idle()
+    await app.stop()
+
 if __name__ == "__main__":
-    # Fix Python 3.10+ event loop crash
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    # Flask for Render Port Bind
-    Thread(target=run_web, daemon=True).start()
-    
-    print("Bot Started Live on Cloud!")
-    app.run()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
     
