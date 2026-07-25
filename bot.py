@@ -24,6 +24,15 @@ def run_flask():
     port = int(os.environ.get("PORT", 8080))
     web_app.run(host="0.0.0.0", port=port)
 
+# Initialize Pyrogram Client safely inside async scope/main to avoid loop error
+app = Client(
+    "BradPittBot",
+    api_id=API_ID,
+    api_hash=API_HASH,
+    bot_token=BOT_TOKEN,
+    in_memory=True
+)
+
 async def progress_bar(current, total, status_msg, start_time, action_type):
     now = time.time()
     diff = now - start_time
@@ -48,14 +57,6 @@ async def progress_bar(current, total, status_msg, start_time, action_type):
             await status_msg.edit_text(status_text)
         except Exception:
             pass
-
-# Initialize Pyrogram Client (without starting globally)
-app = Client(
-    "BradPittBot",
-    api_id=API_ID,
-    api_hash=API_HASH,
-    bot_token=BOT_TOKEN
-)
 
 @app.on_message(filters.command("start"))
 async def start_handler(client, message):
@@ -150,6 +151,6 @@ if __name__ == "__main__":
     # Start Flask Web Server in Background thread for Render
     Thread(target=run_flask, daemon=True).start()
     
-    # Run asyncio event loop safely
+    # Run loop
     asyncio.run(main())
     
