@@ -11,14 +11,6 @@ API_HASH = "ff4b89a18ed81b27f406d719c580689f"
 BOT_TOKEN = "8971531788:AAHV2d8P23EhY0uoRI4xtkNI82pSPHMVxKM"
 CHANNEL_TAG = "@Brad_Pitt_Movies"
 
-# Pyrogram Client Setup
-app = Client(
-    "BradPittBot",
-    api_id=API_ID,
-    api_hash=API_HASH,
-    bot_token=BOT_TOKEN
-)
-
 user_thumbs = {}
 
 # Flask Web Server for Render Port Binding
@@ -31,6 +23,9 @@ def index():
 def run_flask():
     port = int(os.environ.get("PORT", 8080))
     web_app.run(host="0.0.0.0", port=port)
+
+# Pyrogram Client Setup (Initialized inside main to prevent loop errors)
+app = None
 
 async def progress_bar(current, total, status_msg, start_time, action_type):
     now = time.time()
@@ -56,6 +51,16 @@ async def progress_bar(current, total, status_msg, start_time, action_type):
             await status_msg.edit_text(status_text)
         except Exception:
             pass
+
+# Handlers will be registered dynamically or we use a wrapper, 
+# but let's define client handlers using a global app instance declared inside main:
+# To make decorators work cleanly, we instantiate Client globally without starting it:
+app = Client(
+    "BradPittBot",
+    api_id=API_ID,
+    api_hash=API_HASH,
+    bot_token=BOT_TOKEN
+)
 
 @app.on_message(filters.command("start"))
 async def start_handler(client, message):
@@ -150,6 +155,6 @@ if __name__ == "__main__":
     # Start Flask Web Server in Background thread for Render
     Thread(target=run_flask, daemon=True).start()
     
-    # Start Pyrogram Bot
+    # Start Pyrogram Bot inside proper event loop
     asyncio.run(main())
     
