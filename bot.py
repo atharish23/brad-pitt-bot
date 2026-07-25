@@ -2,8 +2,6 @@ import os
 import time
 import asyncio
 from pyrogram import Client, filters
-loop = asyncio.get_event_loop_policy().get_event_loop()
-asyncio.set_event_loop(loop)
 
 API_ID = 29884680
 API_HASH = "ff4b89a18ed81b27f406d719c580689f"
@@ -118,5 +116,11 @@ async def process_file(client, message):
         if os.path.exists(file_path):
             os.remove(file_path)
 
-print("Bot Started Live on Cloud!")
-app.run()
+async def main():
+    await app.start()
+    print("Bot Started Live on Cloud!")
+    await asyncio.Event().wait()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+    
