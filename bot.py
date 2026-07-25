@@ -1,9 +1,12 @@
 import os
 import time
 import asyncio
+import logging
 from flask import Flask
 from threading import Thread
 from pyrogram import Client, filters, idle
+
+logging.basicConfig(level=logging.INFO)
 
 # Credentials
 API_ID = 29884680
@@ -13,24 +16,23 @@ CHANNEL_TAG = "@Brad_Pitt_Movies"
 
 user_thumbs = {}
 
-# Flask Web Server for Render Port Binding
+# 1. Dummy Flask Server to satisfy Render Web Service port requirement
 web_app = Flask(__name__)
 
 @web_app.route('/')
 def index():
-    return "Brad Pitt Bot is Running!"
+    return "Brad Pitt Bot is Active!"
 
 def run_flask():
     port = int(os.environ.get("PORT", 8080))
     web_app.run(host="0.0.0.0", port=port)
 
-# Initialize Pyrogram Client safely inside async scope/main to avoid loop error
+# 2. Pyrogram Client Setup
 app = Client(
     "BradPittBot",
     api_id=API_ID,
     api_hash=API_HASH,
-    bot_token=BOT_TOKEN,
-    in_memory=True
+    bot_token=BOT_TOKEN
 )
 
 async def progress_bar(current, total, status_msg, start_time, action_type):
@@ -141,16 +143,10 @@ async def rename_handler(client, message):
         if file_path and os.path.exists(file_path):
             os.remove(file_path)
 
-async def main():
-    await app.start()
-    print("Bot is Live and Online!")
-    await idle()
-    await app.stop()
-
 if __name__ == "__main__":
-    # Start Flask Web Server in Background thread for Render
+    # Start Flask in background thread so Render port bind check passes instantly
     Thread(target=run_flask, daemon=True).start()
     
-    # Run loop
-    asyncio.run(main())
+    # Run Pyrogram Client properly
+    app.run()
     
