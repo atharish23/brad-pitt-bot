@@ -1,14 +1,12 @@
 import os
 import time
-import asyncio
 import logging
 from flask import Flask
 from threading import Thread
-from pyrogram import Client, filters, idle
+from pyrogram import Client, filters
 
 logging.basicConfig(level=logging.INFO)
 
-# Credentials
 API_ID = 29884680
 API_HASH = "ff4b89a18ed81b27f406d719c580689f"
 BOT_TOKEN = "8971531788:AAHV2d8P23EhY0uoRI4xtkNI82pSPHMVxKM"
@@ -16,18 +14,18 @@ CHANNEL_TAG = "@Brad_Pitt_Movies"
 
 user_thumbs = {}
 
-# 1. Dummy Flask Server to satisfy Render Web Service port requirement
+# Flask web server for Render port
 web_app = Flask(__name__)
 
 @web_app.route('/')
 def index():
-    return "Brad Pitt Bot is Active!"
+    return "Bot is running!"
 
 def run_flask():
     port = int(os.environ.get("PORT", 8080))
     web_app.run(host="0.0.0.0", port=port)
 
-# 2. Pyrogram Client Setup
+# Pyrogram Client
 app = Client(
     "BradPittBot",
     api_id=API_ID,
@@ -62,18 +60,14 @@ async def progress_bar(current, total, status_msg, start_time, action_type):
 
 @app.on_message(filters.command("start"))
 async def start_handler(client, message):
-    await message.reply_text(
-        f"Hello {message.from_user.first_name}! 👋\n\n"
-        "Send me any video/document, and I will rename it and add **@Brad_Pitt_Movies** tag.\n"
-        "You can also send a photo to set a custom thumbnail!"
-    )
+    await message.reply_text(f"Hello {message.from_user.first_name}! 👋\nSend me any video/document to rename with **@Brad_Pitt_Movies**.")
 
 @app.on_message(filters.photo)
 async def set_thumbnail(client, message):
     user_id = message.from_user.id
     photo_path = await message.download()
     user_thumbs[user_id] = photo_path
-    await message.reply_text("✅ **Custom Thumbnail Saved Successfully!**")
+    await message.reply_text("✅ **Thumbnail Saved!**")
 
 @app.on_message(filters.command("delthumb"))
 async def delete_thumbnail(client, message):
@@ -82,13 +76,13 @@ async def delete_thumbnail(client, message):
         if os.path.exists(user_thumbs[user_id]):
             os.remove(user_thumbs[user_id])
         del user_thumbs[user_id]
-        await message.reply_text("🗑️ **Custom Thumbnail Deleted!**")
+        await message.reply_text("🗑️ **Thumbnail Deleted!**")
     else:
-        await message.reply_text("❌ **No custom thumbnail found.**")
+        await message.reply_text("❌ **No thumbnail found.**")
 
 @app.on_message(filters.document | filters.video)
 async def rename_handler(client, message):
-    msg = await message.reply_text("⏳ **Downloading file...**")
+    msg = await message.reply_text("⏳ **Downloading...**")
     user_id = message.from_user.id
     start_time = time.time()
 
@@ -107,7 +101,7 @@ async def rename_handler(client, message):
             progress_args=(msg, start_time, "Downloading"),
         )
 
-        await msg.edit_text("⏳ **Uploading file...**")
+        await msg.edit_text("⏳ **Uploading...**")
         upload_start = time.time()
 
         thumb = user_thumbs.get(user_id, None)
@@ -134,7 +128,7 @@ async def rename_handler(client, message):
                 progress_args=(msg, upload_start, "Uploading"),
             )
 
-        await msg.edit_text("🎉 **File successfully renamed & uploaded!**")
+        await msg.edit_text("🎉 **Done!**")
 
     except Exception as e:
         await msg.edit_text(f"❌ **Error:**\n`{str(e)}`")
@@ -144,9 +138,6 @@ async def rename_handler(client, message):
             os.remove(file_path)
 
 if __name__ == "__main__":
-    # Start Flask in background thread so Render port bind check passes instantly
     Thread(target=run_flask, daemon=True).start()
-    
-    # Run Pyrogram Client properly
     app.run()
     
