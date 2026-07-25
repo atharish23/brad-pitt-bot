@@ -1,6 +1,8 @@
 import os
 import time
 import asyncio
+from flask import Flask
+from threading import Thread
 from pyrogram import Client, filters, idle
 
 # Credentials
@@ -18,6 +20,17 @@ app = Client(
 )
 
 user_thumbs = {}
+
+# Flask Web Server for Render Port Binding
+web_app = Flask(__name__)
+
+@web_app.route('/')
+def index():
+    return "Brad Pitt Bot is Running!"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 8080))
+    web_app.run(host="0.0.0.0", port=port)
 
 async def progress_bar(current, total, status_msg, start_time, action_type):
     now = time.time()
@@ -134,4 +147,9 @@ async def main():
     await app.stop()
 
 if __name__ == "__main__":
+    # Start Flask Web Server in Background thread for Render
+    Thread(target=run_flask, daemon=True).start()
+    
+    # Start Pyrogram Bot
     asyncio.run(main())
+    
